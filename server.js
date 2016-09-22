@@ -23,30 +23,24 @@ function hash(str) {
 };
 
 //function to find
-var findUrls = function(db, callback) {
-   var cursor =db.collection('urls').find();
+var findUrls = function(db, num, callback, callback2) {
+    console.log("Numero arrive : "+num);
+   var cursor =db.collection('urls').find({ "hash": num });
    cursor.each(function(err, doc) {
       assert.equal(err, null);
       if (doc != null) {
-         console.dir(doc);
+         console.dir(doc.url);
+         callback(doc.url);
       } else {
-         callback();
+          callback2();
       }
    });
 };
 
 app.get('/', function (req, res) {
-    // res.writeHead(200, {"Content-Type": "text/html"});
-    // res.write("Welcome to my web app");
-    // res.end();
-
-    MongoClient.connect(dbUrl, function(err, db) {
-        assert.equal(null, err);
-        findUrls(db, function() {
-            db.close();
-        });
-
-    });
+    res.writeHead(200, {"Content-Type": "text/html"});
+    res.write("Welcome to my web app");
+    res.end();
 
 });
 
@@ -78,6 +72,30 @@ app.get('/new/*', function (req, res) {
     else {
         console.log("Error in url validation");
     }
+
+});
+
+app.get('/:num', function (req, res) {
+
+    // extract number in url
+    var num = parseInt(req.params.num);
+
+    // connect to the database
+    MongoClient.connect(dbUrl, function(err, db) {
+
+        assert.equal(null, err);
+        findUrls(db, num, function(url) {
+            db.close();
+            res.redirect(url);
+        }, function () {
+            var data = {
+                'error' : 'This url is not on the database.'
+            }
+            res.json(data);
+            db.close();
+        });
+    });
+
 
 });
 
